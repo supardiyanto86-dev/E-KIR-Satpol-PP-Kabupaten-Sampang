@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-KIR Realtime | Kartu Inventaris Ruangan Instansi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background-color: white;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
+
+    <!-- Notifikasi Toast (Pengganti alert()) -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Header / Navbar -->
+    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 p-2 rounded-lg shadow-inner">
+                        <i class="fa-solid fa-building-shield text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight leading-none">E-KIR PRO</h1>
+                        <p class="text-xs text-slate-400 mt-0.5">Kartu Inventaris Ruangan Realtime</p>
+                    </div>
+                </div>
+
+                <!-- Realtime Status & Action -->
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <div class="hidden sm:flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-xs font-medium text-emerald-400">Live Sync Aktif</span>
+                    </div>
+                    <button onclick="openModal('modalRuangan')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-medium px-3 sm:px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i>
+                        <span class="hidden sm:inline">Tambah Ruangan</span>
+                        <span class="sm:hidden">Ruang</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Selector Ruangan & Filter Atas -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+                <div class="flex-1">
+                    <label for="selectRuangan" class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Pilih Ruangan Kantor</label>
+                    <div class="relative">
+                        <select id="selectRuangan" onchange="gantiRuangan(this.value)" class="w-full sm:w-96 appearance-none bg-slate-50 border border-slate-300 text-slate-900 text-sm sm:text-base font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
+                            <!-- Diisi via JS -->
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 sm:left-80 sm:right-auto flex items-center px-3 text-slate-500">
+                            <i class="fa-solid fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tombol Aksi Utama Ruangan -->
+                <div class="flex flex-wrap items-center gap-2 no-print">
+                    <button onclick="openModal('modalBarang')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-box-open"></i> Tambah Barang
+                    </button>
+                    <button onclick="openModalMutasi()" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-right-left"></i> Catat Mutasi
+                    </button>
+                    <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium px-4 py-2.5 rounded-xl transition flex items-center gap-2" title="Cetak Kartu Inventaris Ruangan">
+                        <i class="fa-solid fa-print"></i> <span class="hidden sm:inline">Cetak KIR</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Profil Ruangan & ASN Penanggung Jawab -->
+            <div id="profilRuanganContainer" class="pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Diisi via JS -->
+            </div>
+        </div>
+
+        <!-- Ringkasan Statistik Realtime -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-cubes"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Total Unit Barang</p>
+                    <h3 id="statTotalUnit" class="text-2xl font-bold text-slate-800 mt-0.5">0</h3>
+                </div>
+            </div>
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Kondisi Baik (B)</p>
+                    <h3 id="statBaik" class="text-2xl font-bold text-emerald-600 mt-0.5">0</h3>
+                </div>
+            </div>
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Rusak Ringan (RR)</p>
+                    <h3 id="statRusakRingan" class="text-2xl font-bold text-amber-600 mt-0.5">0</h3>
+                </div>
+            </div>
+            <div class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-500">Rusak Berat (RB)</p>
+                    <h3 id="statRusakBerat" class="text-2xl font-bold text-rose-600 mt-0.5">0</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs Navigasi: Daftar Barang vs Daftar Mutasi -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 px-4 sm:px-6 pt-3 bg-slate-50/50 no-print">
+                <div class="flex gap-2 overflow-x-auto">
+                    <button onclick="switchTab('barang')" id="tabBtnBarang" class="px-4 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap transition flex items-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> Daftar Barang Inventaris
+                    </button>
+                    <button onclick="switchTab('mutasi')" id="tabBtnMutasi" class="px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap transition flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Riwayat Mutasi Masuk & Keluar
+                        <span id="badgeMutasiCount" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full">0</span>
+                    </button>
+                </div>
+
+                <!-- Pencarian Cepat -->
+                <div class="py-2 sm:py-0 mb-2 sm:mb-0">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="searchInput" onkeyup="renderCurrentView()" placeholder="Cari nama / kode barang..." class="w-full sm:w-64 pl-8 pr-3 py-1.5 text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- KONTEN TAB 1: DAFTAR BARANG INVENTARIS -->
+            <div id="viewBarang" class="p-4 sm:p-6">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b-2 border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50">
+                                <th class="py-3.5 px-4 rounded-tl-lg">Foto & Nama Barang</th>
+                                <th class="py-3.5 px-4">Kode / Merk</th>
+                                <th class="py-3.5 px-4 text-center">Tahun</th>
+                                <th class="py-3.5 px-4 text-center">Jumlah</th>
+                                <th class="py-3.5 px-4">Rincian Kondisi</th>
+                                <th class="py-3.5 px-4">ASN Pengguna</th>
+                                <th class="py-3.5 px-4 text-right rounded-tr-lg no-print">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelBarangBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Diisi via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyBarangState" class="hidden py-12 text-center">
+                    <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                        <i class="fa-solid fa-box-open"></i>
+                    </div>
+                    <h4 class="text-slate-700 font-semibold">Belum ada data barang</h4>
+                    <p class="text-slate-500 text-sm mt-1">Tambahkan barang inventaris baru atau mutasi masuk ke ruangan ini.</p>
+                </div>
+            </div>
+
+            <!-- KONTEN TAB 2: DAFTAR MUTASI MASUK & KELUAR -->
+            <div id="viewMutasi" class="hidden p-4 sm:p-6">
+                <!-- Filter Tipe Mutasi -->
+                <div class="flex flex-wrap items-center gap-2 mb-4 no-print">
+                    <button onclick="setFilterMutasi('SEMUA')" id="filterMutasiSemua" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white transition">Semua Mutasi</button>
+                    <button onclick="setFilterMutasi('MASUK')" id="filterMutasiMasuk" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition">
+                        <i class="fa-solid fa-arrow-down-left text-emerald-600 mr-1"></i> Mutasi Masuk
+                    </button>
+                    <button onclick="setFilterMutasi('KELUAR')" id="filterMutasiKeluar" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition">
+                        <i class="fa-solid fa-arrow-up-right text-rose-600 mr-1"></i> Mutasi Keluar
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b-2 border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500 bg-slate-50">
+                                <th class="py-3.5 px-4 rounded-tl-lg">Waktu & Jenis</th>
+                                <th class="py-3.5 px-4">Barang Inventaris</th>
+                                <th class="py-3.5 px-4 text-center">Unit</th>
+                                <th class="py-3.5 px-4">Asal / Tujuan Ruangan</th>
+                                <th class="py-3.5 px-4">Keterangan & Petugas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelMutasiBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Diisi via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyMutasiState" class="hidden py-12 text-center">
+                    <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                        <i class="fa-solid fa-right-left"></i>
+                    </div>
+                    <h4 class="text-slate-700 font-semibold">Belum ada riwayat mutasi</h4>
+                    <p class="text-slate-500 text-sm mt-1">Catatan perpindahan barang masuk dan keluar ruangan akan muncul di sini.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- MODALS                                                                -->
+    <!-- ===================================================================== -->
+
+    <!-- MODAL 1: Tambah / Edit Barang -->
+    <div id="modalBarang" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full overflow-hidden my-8">
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 id="modalBarangTitle" class="font-bold text-lg">Tambah Barang Inventaris</h3>
+                <button onclick="closeModal('modalBarang')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="formBarang" onsubmit="simpanBarang(event)" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <input type="hidden" id="editBarangId">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Kode Barang / Register *</label>
+                        <input type="text" id="inputKodeBarang" required placeholder="Contoh: 3.10.01.02.001" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Barang *</label>
+                        <input type="text" id="inputNamaBarang" required placeholder="Contoh: Laptop Kerja Core i7" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Merk / Tipe / Spesifikasi</label>
+                        <input type="text" id="inputMerkBarang" placeholder="Contoh: Lenovo ThinkPad T14" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tahun Perolehan *</label>
+                        <input type="number" id="inputTahunBarang" required min="1990" max="2030" value="2024" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Kondisi & Jumlah Unit -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Rincian Jumlah Unit Berdasarkan Kondisi</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-emerald-700 mb-1">Baik (B)</label>
+                            <input type="number" id="inputKondisiBaik" min="0" value="1" required class="w-full px-3 py-2 text-sm border border-emerald-300 bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-amber-700 mb-1">Rusak Ringan (RR)</label>
+                            <input type="number" id="inputKondisiRR" min="0" value="0" required class="w-full px-3 py-2 text-sm border border-amber-300 bg-white rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-rose-700 mb-1">Rusak Berat (RB)</label>
+                            <input type="number" id="inputKondisiRB" min="0" value="0" required class="w-full px-3 py-2 text-sm border border-rose-300 bg-white rounded-lg focus:ring-2 focus:ring-rose-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Foto Barang -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Foto Barang (Unggah File atau URL Gambar)</label>
+                    <div class="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                        <input type="file" id="fileFotoBarang" accept="image/*" onchange="previewImageUpload(this, 'previewBarangImg', 'inputFotoBarangUrl')" class="text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                        <span class="text-xs text-slate-400">atau</span>
+                        <input type="url" id="inputFotoBarangUrl" oninput="document.getElementById('previewBarangImg').src = this.value || 'https://placehold.co/100x100/e2e8f0/64748b?text=Foto+Barang'" placeholder="https://..." class="flex-1 w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none">
+                    </div>
+                    <img id="previewBarangImg" src="https://placehold.co/100x100/e2e8f0/64748b?text=Foto+Barang" alt="Preview" class="mt-2 h-20 w-20 object-cover rounded-lg border border-slate-200">
+                </div>
+
+                <!-- ASN Pengguna Barang -->
+                <div class="border-t border-slate-200 pt-4">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">ASN Pengguna / Pemegang Barang</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Nama ASN & Gelar *</label>
+                            <input type="text" id="inputAsnNama" required placeholder="Contoh: Budi Santoso, S.Kom" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">NIP ASN *</label>
+                            <input type="text" id="inputAsnNip" required placeholder="Contoh: 19880512 201503 1 002" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Foto ASN Pengguna</label>
+                        <div class="flex items-center gap-3">
+                            <img id="previewAsnImg" src="https://placehold.co/80x80/cbd5e1/475569?text=ASN" alt="ASN" class="h-12 w-12 rounded-full object-cover border border-slate-300">
+                            <input type="file" id="fileFotoAsn" accept="image/*" onchange="previewImageUpload(this, 'previewAsnImg', 'inputFotoAsnUrl')" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+                            <input type="hidden" id="inputFotoAsnUrl">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modalBarang')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition">Simpan Data Barang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Catat Mutasi Barang (Masuk / Keluar) -->
+    <div id="modalMutasi" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden">
+            <div class="px-6 py-4 bg-amber-500 text-white flex justify-between items-center">
+                <h3 class="font-bold text-lg flex items-center gap-2"><i class="fa-solid fa-right-left"></i> Catat Mutasi Barang</h3>
+                <button onclick="closeModal('modalMutasi')" class="text-amber-100 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="formMutasi" onsubmit="prosesMutasi(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Mutasi *</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="jenisMutasi" value="KELUAR" checked onchange="toggleFormMutasi()" class="peer sr-only">
+                            <div class="p-3 text-center rounded-xl border-2 border-slate-200 peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-700 font-semibold text-sm transition">
+                                <i class="fa-solid fa-arrow-up-right mr-1"></i> Mutasi Keluar
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="jenisMutasi" value="MASUK" onchange="toggleFormMutasi()" class="peer sr-only">
+                            <div class="p-3 text-center rounded-xl border-2 border-slate-200 peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700 font-semibold text-sm transition">
+                                <i class="fa-solid fa-arrow-down-left mr-1"></i> Mutasi Masuk
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Jika Mutasi Keluar: Pilih Barang yang ada di ruangan ini -->
+                <div id="mutasiKeluarFields" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Barang dari Ruangan Ini *</label>
+                        <select id="selectBarangMutasi" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            <!-- Diisi via JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Ruangan Tujuan / Penerima *</label>
+                        <select id="selectRuanganTujuan" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                            <!-- Diisi via JS -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Jika Mutasi Masuk: Input Barang Baru / Dari Ruangan Lain -->
+                <div id="mutasiMasukFields" class="hidden space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Barang Masuk *</label>
+                        <input type="text" id="inputMutasiNamaBarang" placeholder="Contoh: Printer LaserJet Pro" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Kode Barang</label>
+                            <input type="text" id="inputMutasiKodeBarang" placeholder="3.10.02.004" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Tahun Perolehan</label>
+                            <input type="number" id="inputMutasiTahun" value="2025" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Asal Ruangan / Pengadaan *</label>
+                        <input type="text" id="inputMutasiAsal" placeholder="Contoh: Gudang Aset Utama / Pengadaan APBD" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Unit Dimutasi *</label>
+                        <input type="number" id="inputMutasiJumlah" min="1" value="1" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Kondisi Barang</label>
+                        <select id="inputMutasiKondisi" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                            <option value="B">Baik (B)</option>
+                            <option value="RR">Rusak Ringan (RR)</option>
+                            <option value="RB">Rusak Berat (RB)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Keterangan / Nomor Berita Acara (BAST)</label>
+                    <input type="text" id="inputMutasiKeterangan" required placeholder="Contoh: BAST No. 024/KIR/2026 - Pemindahan Staf" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modalMutasi')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl shadow-sm transition">Proses Mutasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Tambah Ruangan Baru -->
+    <div id="modalRuangan" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-lg">Tambah Ruangan Kantor</h3>
+                <button onclick="closeModal('modalRuangan')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form onsubmit="simpanRuangan(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Kode Ruangan *</label>
+                    <input type="text" id="inputKodeRuang" required placeholder="Contoh: R.204" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Ruangan *</label>
+                    <input type="text" id="inputNamaRuang" required placeholder="Contoh: Ruang Bidang Anggaran" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Penanggung Jawab Ruangan (Kepala Seksi/Bidang) *</label>
+                    <input type="text" id="inputPjNama" required placeholder="Contoh: Dra. Siti Aminah, M.Si" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">NIP Penanggung Jawab *</label>
+                    <input type="text" id="inputPjNip" required placeholder="Contoh: 19790814 200501 2 009" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none">
+                </div>
+                <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modalRuangan')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl">Simpan Ruangan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Preview Foto Besar -->
+    <div id="modalPreviewFoto" onclick="closeModal('modalPreviewFoto')" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 cursor-zoom-out">
+        <div class="max-w-2xl w-full bg-white p-2 rounded-2xl shadow-2xl" onclick="event.stopPropagation()">
+            <img id="imgPreviewBesar" src="" alt="Preview" class="w-full max-h-[75vh] object-contain rounded-xl bg-slate-100">
+            <div class="p-3 flex justify-between items-center">
+                <p id="captionPreviewBesar" class="text-sm font-semibold text-slate-800"></p>
+                <button onclick="closeModal('modalPreviewFoto')" class="text-xs bg-slate-200 hover:bg-slate-300 px-3 py-1.5 rounded-lg font-medium">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // ==========================================
+        // DATA AWAL (SIMULASI REALTIME STATE)
+        // ==========================================
+        let state = {
+            activeRuanganId: 'R-01',
+            activeTab: 'barang',
+            filterMutasi: 'SEMUA',
+            ruangan: [
+                {
+                    id: 'R-01',
+                    kode: 'R.101',
+                    nama: 'Ruang Sekretariat & Tata Usaha',
+                    lokasi: 'Lantai 1 - Gedung Utama',
+                    pjNama: 'Drs. H. Ahmad Fauzi, M.AP',
+                    pjNip: '19750412 200003 1 004',
+                    pjJabatan: 'Kepala Sub Bagian Umum & Kepegawaian',
+                    pjFoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80'
+                },
+                {
+                    id: 'R-02',
+                    kode: 'R.202',
+                    nama: 'Ruang Bidang Perencanaan & IT',
+                    lokasi: 'Lantai 2 - Sayap Barat',
+                    pjNama: 'Rina Kartika Dewi, S.T., M.Kom',
+                    pjNip: '19841120 200902 2 007',
+                    pjJabatan: 'Kepala Bidang Infrastruktur & TIK',
+                    pjFoto: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80'
+                },
+                {
+                    id: 'R-03',
+                    kode: 'R.301',
+                    nama: 'Ruang Rapat Pimpinan',
+                    lokasi: 'Lantai 3 - Gedung Utama',
+                    pjNama: 'Bambang Sutrisno, S.Sos',
+                    pjNip: '19800215 200604 1 011',
+                    pjJabatan: 'Pengelola Barang Milik Daerah',
+                    pjFoto: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
+                }
+            ],
+            barang: [
+                {
+                    id: 'BRG-001',
+                    ruanganId: 'R-01',
+                    kode: '3.10.01.02.001',
+                    nama: 'Komputer All-in-One (PC Workstation)',
+                    merk: 'HP ProOne 440 G9 Core i7',
+                    tahun: 2024,
+                    baik: 3,
+                    rusakRingan: 1,
+                    rusakBerat: 0,
+                    fotoBarang: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=300&q=80',
+                    asnNama: 'Siti Nurhaliza, S.E.',
+                    asnNip: '19920315 201903 2 012',
+                    asnFoto: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=150&q=80'
+                },
+                {
+                    id: 'BRG-002',
+                    ruanganId: 'R-01',
+                    kode: '3.05.01.04.002',
+                    nama: 'Lemari Arsip Besi Pintu Kaca',
+                    merk: 'Brother B-304 Heavy Duty',
+                    tahun: 2021,
+                    baik: 2,
+                    rusakRingan: 0,
+                    rusakBerat: 0,
+                    fotoBarang: 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=300&q=80',
+                    asnNama: 'Hendra Wijaya, A.Md',
+                    asnNip: '19900722 201502 1 003',
+                    asnFoto: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80'
+                },
+                {
+                    id: 'BRG-003',
+                    ruanganId: 'R-01',
+                    kode: '3.05.02.04.006',
+                    nama: 'AC Split Wall Mounted 2 PK',
+                    merk: 'Daikin Inverter FTKC50',
+                    tahun: 2020,
+                    baik: 1,
+                    rusakRingan: 0,
+                    rusakBerat: 1,
+                    fotoBarang: 'https://images.unsplash.com/photo-1614631446501-abcf76949eca?auto=format&fit=crop&w=300&q=80',
+                    asnNama: 'Drs. H. Ahmad Fauzi, M.AP',
+                    asnNip: '19750412 200003 1 004',
+                    asnFoto: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=150&q=80'
+                },
+                {
+                    id: 'BRG-004',
+                    ruanganId: 'R-02',
+                    kode: '3.10.01.02.002',
+                    nama: 'Laptop Operasional Lapangan',
+                    merk: 'Lenovo ThinkPad X1 Carbon',
+                    tahun: 2025,
+                    baik: 4,
+                    rusakRingan: 0,
+                    rusakBerat: 0,
+                    fotoBarang: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=300&q=80',
+                    asnNama: 'Dimas Pratama, S.Kom',
+                    asnNip: '19950810 202012 1 005',
+                    asnFoto: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=150&q=80'
+                }
+            ],
+            mutasi: [
+                {
+                    id: 'MUT-01',
+                    ruanganId: 'R-01',
+                    jenis: 'MASUK',
+                    tanggal: '26 Nov 2026, 09:15',
+                    kodeBarang: '3.10.01.02.001',
+                    namaBarang: 'Komputer All-in-One (PC Workstation)',
+                    jumlah: 2,
+                    kondisi: 'B',
+                    asalTujuan: 'Gudang Pengadaan Aset 2024',
+                    keterangan: 'BAST No. 112/ASET/2024 - Penambahan unit staf TU',
+                    petugas: 'Admin Pengurus Barang'
+                },
+                {
+                    id: 'MUT-02',
+                    ruanganId: 'R-01',
+                    jenis: 'KELUAR',
+                    tanggal: '20 Nov 2026, 14:30',
+                    kodeBarang: '3.10.02.03.003',
+                    namaBarang: 'Printer Epson EcoTank L3210',
+                    jumlah: 1,
+                    kondisi: 'RR',
+                    asalTujuan: 'Ruang Bidang Perencanaan & IT (R.202)',
+                    keterangan: 'BAST No. 108/MUT/2026 - Dipinjamkan untuk operasional',
+                    petugas: 'Siti Nurhaliza, S.E.'
+                }
+            ]
+        };
+
+        // ==========================================
+        // INISIALISASI & RENDER UI
+        // ==========================================
+        function initApp() {
+            renderSelectRuangan();
+            renderProfilRuangan();
+            renderCurrentView();
+        }
+
+        function renderSelectRuangan() {
+            const select = document.getElementById('selectRuangan');
+            select.innerHTML = state.ruangan.map(r => 
+                `<option value="${r.id}" ${r.id === state.activeRuanganId ? 'selected' : ''}>[${r.kode}] ${r.nama}</option>`
+            ).join('');
+        }
+
+        function gantiRuangan(ruanganId) {
+            state.activeRuanganId = ruanganId;
+            renderProfilRuangan();
+            renderCurrentView();
+            showToast(`Memuat Kartu Inventaris: ${getActiveRuangan().nama}`, 'info');
+        }
+
+        function getActiveRuangan() {
+            return state.ruangan.find(r => r.id === state.activeRuanganId) || state.ruangan[0];
+        }
+
+        function renderProfilRuangan() {
+            const ruang = getActiveRuangan();
+            const container = document.getElementById('profilRuanganContainer');
+            
+            container.innerHTML = `
+                <div class="lg:col-span-7 space-y-2">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold">
+                        <i class="fa-solid fa-door-open"></i> KODE RUANG: ${ruang.kode}
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900">${ruang.nama}</h2>
+                    <p class="text-sm text-slate-500 flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot text-slate-400"></i> ${ruang.lokasi || 'Gedung Kantor Utama'}
+                    </p>
+                </div>
+                <div class="lg:col-span-5 bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center gap-4">
+                    <img src="${ruang.pjFoto}" onerror="this.src='https://placehold.co/100x100/cbd5e1/475569?text=PJ'" alt="${ruang.pjNama}" class="w-14 h-14 rounded-full object-cover border-2 border-white shadow-sm shrink-0">
+                    <div class="min-w-0">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600 block">Penanggung Jawab Ruangan</span>
+                        <h4 class="text-sm font-bold text-slate-900 truncate">${ruang.pjNama}</h4>
+                        <p class="text-xs text-slate-500 font-mono mt-0.5">NIP. ${ruang.pjNip}</p>
+                        <p class="text-xs text-slate-500 truncate">${ruang.pjJabatan || 'Pejabat Penanggung Jawab'}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+            const btnBarang = document.getElementById('tabBtnBarang');
+            const btnMutasi = document.getElementById('tabBtnMutasi');
+            const viewBarang = document.getElementById('viewBarang');
+            const viewMutasi = document.getElementById('viewMutasi');
+
+            if (tabName === 'barang') {
+                btnBarang.className = "px-4 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap transition flex items-center gap-2";
+                btnMutasi.className = "px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap transition flex items-center gap-2";
+                viewBarang.classList.remove('hidden');
+                viewMutasi.classList.add('hidden');
+            } else {
+                btnMutasi.className = "px-4 py-3 text-sm font-semibold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap transition flex items-center gap-2";
+                btnBarang.className = "px-4 py-3 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 whitespace-nowrap transition flex items-center gap-2";
+                viewMutasi.classList.remove('hidden');
+                viewBarang.classList.add('hidden');
+            }
+            renderCurrentView();
+        }
+
+        function renderCurrentView() {
+            updateStatistikRealtime();
+            renderTabelBarang();
+            renderTabelMutasi();
+        }
+
+        // ==========================================
+        // UPDATE STATISTIK REALTIME
+        // ==========================================
+        function updateStatistikRealtime() {
+            const barangRuangan = state.barang.filter(b => b.ruanganId === state.activeRuanganId);
+            const mutasiRuangan = state.mutasi.filter(m => m.ruanganId === state.activeRuanganId);
+
+            let totalBaik = 0;
+            let totalRR = 0;
+            let totalRB = 0;
+
+            barangRuangan.forEach(item => {
+                totalBaik += Number(item.baik || 0);
+                totalRR += Number(item.rusakRingan || 0);
+                totalRB += Number(item.rusakBerat || 0);
+            });
+
+            const totalSemua = totalBaik + totalRR + totalRB;
+
+            document.getElementById('statTotalUnit').textContent = totalSemua;
+            document.getElementById('statBaik').textContent = totalBaik;
+            document.getElementById('statRusakRingan').textContent = totalRR;
+            document.getElementById('statRusakBerat').textContent = totalRB;
+            document.getElementById('badgeMutasiCount').textContent = mutasiRuangan.length;
+        }
+
+        // ==========================================
+        // RENDER TABEL BARANG INVENTARIS
+        // ==========================================
+        function renderTabelBarang() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const tbody = document.getElementById('tabelBarangBody');
+            const emptyState = document.getElementById('emptyBarangState');
+
+            const filtered = state.barang.filter(b => 
+                b.ruanganId === state.activeRuanganId &&
+                (b.nama.toLowerCase().includes(keyword) || 
+                 b.kode.toLowerCase().includes(keyword) || 
+                 b.asnNama.toLowerCase().includes(keyword))
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = filtered.map(item => {
+                const totalUnit = Number(item.baik) + Number(item.rusakRingan) + Number(item.rusakBerat);
+                return `
+                <tr class="hover:bg-slate-50/80 transition group">
+                    <!-- Foto & Nama Barang -->
+                    <td class="py-3.5 px-4">
+                        <div class="flex items-center gap-3">
+                            <img src="${item.fotoBarang}" 
+                                 onerror="this.src='https://placehold.co/100x100/e2e8f0/64748b?text=Barang'"
+                                 onclick="previewFoto('${item.fotoBarang}', '${item.nama} (${item.kode})')"
+                                 alt="${item.nama}" 
+                                 class="w-12 h-12 rounded-xl object-cover border border-slate-200 cursor-zoom-in hover:scale-105 transition shrink-0 shadow-sm">
+                            <div>
+                                <div class="font-bold text-slate-900 leading-snug">${item.nama}</div>
+                                <div class="text-xs text-slate-500 mt-0.5">${item.merk || '-'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <!-- Kode -->
+                    <td class="py-3.5 px-4">
+                        <span class="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded-md border border-slate-200">${item.kode}</span>
+                    </td>
+                    <!-- Tahun Perolehan -->
+                    <td class="py-3.5 px-4 text-center">
+                        <span class="font-semibold text-slate-700">${item.tahun}</span>
+                    </td>
+                    <!-- Total Unit -->
+                    <td class="py-3.5 px-4 text-center">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-50 text-blue-700 font-bold text-sm">
+                            ${totalUnit}
+                        </span>
+                    </td>
+                    <!-- Kondisi Realtime (B / RR / RB) -->
+                    <td class="py-3.5 px-4">
+                        <div class="flex flex-wrap gap-1.5">
+                            ${item.baik > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">B: ${item.baik}</span>` : ''}
+                            ${item.rusakRingan > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">RR: ${item.rusakRingan}</span>` : ''}
+                            ${item.rusakBerat > 0 ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">RB: ${item.rusakBerat}</span>` : ''}
+                        </div>
+                    </td>
+                    <!-- ASN Pengguna -->
+                    <td class="py-3.5 px-4">
+                        <div class="flex items-center gap-2.5">
+                            <img src="${item.asnFoto}" 
+                                 onerror="this.src='https://placehold.co/80x80/cbd5e1/475569?text=ASN'"
+                                 onclick="previewFoto('${item.asnFoto}', 'Pengguna: ${item.asnNama} (NIP. ${item.asnNip})')"
+                                 alt="${item.asnNama}" 
+                                 class="w-9 h-9 rounded-full object-cover border border-slate-300 cursor-zoom-in shrink-0">
+                            <div class="min-w-0">
+                                <div class="text-xs font-bold text-slate-800 truncate max-w-[160px]">${item.asnNama}</div>
+                                <div class="text-[11px] font-mono text-slate-500 truncate">NIP. ${item.asnNip}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <!-- Aksi -->
+                    <td class="py-3.5 px-4 text-right no-print">
+                        <div class="flex items-center justify-end gap-1">
+                            <button onclick="editBarang('${item.id}')" class="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit Kondisi / Data">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="hapusBarang('${item.id}')" class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus Barang">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // RENDER TABEL MUTASI MASUK & KELUAR
+        // ==========================================
+        function setFilterMutasi(tipe) {
+            state.filterMutasi = tipe;
+            document.getElementById('filterMutasiSemua').className = tipe === 'SEMUA' ? 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+            document.getElementById('filterMutasiMasuk').className = tipe === 'MASUK' ? 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition';
+            document.getElementById('filterMutasiKeluar').className = tipe === 'KELUAR' ? 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 text-white transition' : 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition';
+            renderTabelMutasi();
+        }
+
+        function renderTabelMutasi() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const tbody = document.getElementById('tabelMutasiBody');
+            const emptyState = document.getElementById('emptyMutasiState');
+
+            const filtered = state.mutasi.filter(m => {
+                const matchRuang = m.ruanganId === state.activeRuanganId;
+                const matchTipe = state.filterMutasi === 'SEMUA' || m.jenis === state.filterMutasi;
+                const matchKeyword = m.namaBarang.toLowerCase().includes(keyword) || m.asalTujuan.toLowerCase().includes(keyword);
+                return matchRuang && matchTipe && matchKeyword;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tbody.innerHTML = filtered.map(m => {
+                const isMasuk = m.jenis === 'MASUK';
+                return `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="py-3.5 px-4">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${isMasuk ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                            <i class="fa-solid ${isMasuk ? 'fa-arrow-down-left' : 'fa-arrow-up-right'}"></i>
+                            MUTASI ${m.jenis}
+                        </span>
+                        <div class="text-xs text-slate-400 mt-1">${m.tanggal}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="font-bold text-slate-800">${m.namaBarang}</div>
+                        <div class="text-xs font-mono text-slate-500">${m.kodeBarang || '-'}</div>
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        <span class="font-bold text-sm ${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${isMasuk ? '+' : '-'}${m.jumlah} Unit
+                        </span>
+                        <div class="text-[11px] text-slate-500">Kondisi: ${m.kondisi}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="text-xs text-slate-400">${isMasuk ? 'Dari:' : 'Ke:'}</div>
+                        <div class="font-semibold text-slate-700 text-sm">${m.asalTujuan}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <div class="text-xs text-slate-700 font-medium">${m.keterangan}</div>
+                        <div class="text-[11px] text-slate-400 mt-0.5"><i class="fa-solid fa-user-check mr-1"></i>Oleh: ${m.petugas}</div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        // ==========================================
+        // TAMBAH & EDIT BARANG
+        // ==========================================
+        function simpanBarang(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editBarangId').value;
+            const baik = parseInt(document.getElementById('inputKondisiBaik').value) || 0;
+            const rr = parseInt(document.getElementById('inputKondisiRR').value) || 0;
+            const rb = parseInt(document.getElementById('inputKondisiRB').value) || 0;
+
+            if (baik + rr + rb <= 0) {
+                showToast('Jumlah total unit barang minimal harus 1!', 'error');
+                return;
+            }
+
+            const dataBarang = {
+                id: editId || 'BRG-' + Date.now(),
+                ruanganId: state.activeRuanganId,
+                kode: document.getElementById('inputKodeBarang').value,
+                nama: document.getElementById('inputNamaBarang').value,
+                merk: document.getElementById('inputMerkBarang').value,
+                tahun: parseInt(document.getElementById('inputTahunBarang').value),
+                baik: baik,
+                rusakRingan: rr,
+                rusakBerat: rb,
+                fotoBarang: document.getElementById('inputFotoBarangUrl').value || document.getElementById('previewBarangImg').src,
+                asnNama: document.getElementById('inputAsnNama').value,
+                asnNip: document.getElementById('inputAsnNip').value,
+                asnFoto: document.getElementById('inputFotoAsnUrl').value || document.getElementById('previewAsnImg').src
+            };
+
+            if (editId) {
+                const idx = state.barang.findIndex(b => b.id === editId);
+                if (idx !== -1) state.barang[idx] = dataBarang;
+                showToast('Data & kondisi barang berhasil diperbarui!', 'success');
+            } else {
+                state.barang.unshift(dataBarang);
+                // Otomatis catat ke mutasi masuk jika barang baru ditambahkan
+                state.mutasi.unshift({
+                    id: 'MUT-' + Date.now(),
+                    ruanganId: state.activeRuanganId,
+                    jenis: 'MASUK',
+                    tanggal: getFormattedNow(),
+                    kodeBarang: dataBarang.kode,
+                    namaBarang: dataBarang.nama,
+                    jumlah: baik + rr + rb,
+                    kondisi: baik > 0 ? 'B' : (rr > 0 ? 'RR' : 'RB'),
+                    asalTujuan: 'Pencatatan Inventaris Baru',
+                    keterangan: `Input baru pemegang: ${dataBarang.asnNama}`,
+                    petugas: 'Admin Ruangan'
+                });
+                showToast('Barang baru berhasil ditambahkan ke KIR!', 'success');
+            }
+
+            closeModal('modalBarang');
+            renderCurrentView();
+        }
+
+        function editBarang(id) {
+            const item = state.barang.find(b => b.id === id);
+            if (!item) return;
+
+            document.getElementById('modalBarangTitle').textContent = 'Edit Barang & Kondisi Realtime';
+            document.getElementById('editBarangId').value = item.id;
+            document.getElementById('inputKodeBarang').value = item.kode;
+            document.getElementById('inputNamaBarang').value = item.nama;
+            document.getElementById('inputMerkBarang').value = item.merk;
+            document.getElementById('inputTahunBarang').value = item.tahun;
+            document.getElementById('inputKondisiBaik').value = item.baik;
+            document.getElementById('inputKondisiRR').value = item.rusakRingan;
+            document.getElementById('inputKondisiRB').value = item.rusakBerat;
+            document.getElementById('inputFotoBarangUrl').value = item.fotoBarang;
+            document.getElementById('previewBarangImg').src = item.fotoBarang;
+            document.getElementById('inputAsnNama').value = item.asnNama;
+            document.getElementById('inputAsnNip').value = item.asnNip;
+            document.getElementById('inputFotoAsnUrl').value = item.asnFoto;
+            document.getElementById('previewAsnImg').src = item.asnFoto;
+
+            openModal('modalBarang', true);
+        }
+
+        function hapusBarang(id) {
+            const idx = state.barang.findIndex(b => b.id === id);
+            if (idx !== -1) {
+                const nama = state.barang[idx].nama;
+                state.barang.splice(idx, 1);
+                renderCurrentView();
+                showToast(`Barang "${nama}" dihapus dari daftar.`, 'info');
+            }
+        }
+
+        // ==========================================
+        // PROSES MUTASI MASUK & KELUAR
+        // ==========================================
+        function openModalMutasi() {
+            const barangRuangIni = state.barang.filter(b => b.ruanganId === state.activeRuanganId);
+            const selectBarang = document.getElementById('selectBarangMutasi');
+            selectBarang.innerHTML = barangRuangIni.length > 0 
+                ? barangRuangIni.map(b => `<option value="${b.id}">${b.nama} (Tersedia: ${b.baik + b.rusakRingan + b.rusakBerat} unit)</option>`).join('')
+                : `<option value="">-- Tidak ada barang di ruangan ini --</option>`;
+
+            const ruanganLain = state.ruangan.filter(r => r.id !== state.activeRuanganId);
+            const selectTujuan = document.getElementById('selectRuanganTujuan');
+            selectTujuan.innerHTML = ruanganLain.map(r => `<option value="${r.id}">[${r.kode}] ${r.nama}</option>`).join('') +
+                                     `<option value="GUDANG_PENGHAPUSAN">Gudang Aset / Usulan Penghapusan</option>`;
+
+            document.getElementById('formMutasi').reset();
+            toggleFormMutasi();
+            openModal('modalMutasi');
+        }
+
+        function toggleFormMutasi() {
+            const jenis = document.querySelector('input[name="jenisMutasi"]:checked').value;
+            const keluarFields = document.getElementById('mutasiKeluarFields');
+            const masukFields = document.getElementById('mutasiMasukFields');
+
+            if (jenis === 'KELUAR') {
+                keluarFields.classList.remove('hidden');
+                masukFields.classList.add('hidden');
+            } else {
+                keluarFields.classList.add('hidden');
+                masukFields.classList.remove('hidden');
+            }
+        }
+
+        function prosesMutasi(e) {
+            e.preventDefault();
+            const jenis = document.querySelector('input[name="jenisMutasi"]:checked').value;
+            const jumlah = parseInt(document.getElementById('inputMutasiJumlah').value);
+            const kondisi = document.getElementById('inputMutasiKondisi').value;
+            const keterangan = document.getElementById('inputMutasiKeterangan').value;
+            const ruangAktif = getActiveRuangan();
+
+            if (jenis === 'KELUAR') {
+                const barangId = document.getElementById('selectBarangMutasi').value;
+                const tujuanId = document.getElementById('selectRuanganTujuan').value;
+                const barang = state.barang.find(b => b.id === barangId);
+
+                if (!barang) {
+                    showToast('Pilih barang yang valid untuk mutasi keluar!', 'error');
+                    return;
+                }
+
+                const totalTersedia = barang.baik + barang.rusakRingan + barang.rusakBerat;
+                if (jumlah > totalTersedia) {
+                    showToast(`Jumlah mutasi (${jumlah}) melebihi stok tersedia (${totalTersedia})!`, 'error');
+                    return;
+                }
+
+                // Kurangi stok di ruangan asal berdasarkan kondisi
+                let sisaKurang = jumlah;
+                if (kondisi === 'B' && barang.baik >= sisaKurang) { barang.baik -= sisaKurang; sisaKurang = 0; }
+                else if (kondisi === 'RR' && barang.rusakRingan >= sisaKurang) { barang.rusakRingan -= sisaKurang; sisaKurang = 0; }
+                else if (kondisi === 'RB' && barang.rusakBerat >= sisaKurang) { barang.rusakBerat -= sisaKurang; sisaKurang = 0; }
+                else {
+                    // Kurangi proporsional jika kondisi spesifik kurang
+                    const potongB = Math.min(barang.baik, sisaKurang); barang.baik -= potongB; sisaKurang -= potongB;
+                    const potongRR = Math.min(barang.rusakRingan, sisaKurang); barang.rusakRingan -= potongRR; sisaKurang -= potongRR;
+                    const potongRB = Math.min(barang.rusakBerat, sisaKurang); barang.rusakBerat -= potongRB; sisaKurang -= potongRB;
+                }
+
+                // Hapus jika unit menjadi 0
+                if (barang.baik + barang.rusakRingan + barang.rusakBerat === 0) {
+                    state.barang = state.barang.filter(b => b.id !== barang.id);
+                }
+
+                // Tentukan nama tujuan
+                let namaTujuan = 'Gudang Aset / Penghapusan';
+                const ruangTujuanObj = state.ruangan.find(r => r.id === tujuanId);
+                if (ruangTujuanObj) {
+                    namaTujuan = `[${ruangTujuanObj.kode}] ${ruangTujuanObj.nama}`;
+                    // Tambahkan barang & mutasi masuk otomatis ke ruangan tujuan!
+                    state.barang.unshift({
+                        ...barang,
+                        id: 'BRG-' + Date.now(),
+                        ruanganId: ruangTujuanObj.id,
+                        baik: kondisi === 'B' ? jumlah : 0,
+                        rusakRingan: kondisi === 'RR' ? jumlah : 0,
+                        rusakBerat: kondisi === 'RB' ? jumlah : 0
+                    });
+                    state.mutasi.unshift({
+                        id: 'MUT-IN-' + Date.now(),
+                        ruanganId: ruangTujuanObj.id,
+                        jenis: 'MASUK',
+                        tanggal: getFormattedNow(),
+                        kodeBarang: barang.kode,
+                        namaBarang: barang.nama,
+                        jumlah: jumlah,
+                        kondisi: kondisi,
+                        asalTujuan: `[${ruangAktif.kode}] ${ruangAktif.nama}`,
+                        keterangan: keterangan,
+                        petugas: ruangAktif.pjNama
+                    });
+                }
+
+                // Catat mutasi keluar di ruangan ini
+                state.mutasi.unshift({
+                    id: 'MUT-OUT-' + Date.now(),
+                    ruanganId: state.activeRuanganId,
+                    jenis: 'KELUAR',
+                    tanggal: getFormattedNow(),
+                    kodeBarang: barang.kode,
+                    namaBarang: barang.nama,
+                    jumlah: jumlah,
+                    kondisi: kondisi,
+                    asalTujuan: namaTujuan,
+                    keterangan: keterangan,
+                    petugas: ruangAktif.pjNama
+                });
+
+                showToast(`Mutasi keluar ${jumlah} unit ${barang.nama} berhasil dicatat!`, 'success');
+
+            } else {
+                // MUTASI MASUK MANUAL
+                const namaBarang = document.getElementById('inputMutasiNamaBarang').value;
+                const kodeBarang = document.getElementById('inputMutasiKodeBarang').value || '3.10.01.99.001';
+                const tahun = parseInt(document.getElementById('inputMutasiTahun').value) || 2025;
+                const asal = document.getElementById('inputMutasiAsal').value;
+
+                if (!namaBarang || !asal) {
+                    showToast('Lengkapi nama barang dan asal mutasi!', 'error');
+                    return;
+                }
+
+                // Tambahkan ke daftar barang ruangan
+                state.barang.unshift({
+                    id: 'BRG-' + Date.now(),
+                    ruanganId: state.activeRuanganId,
+                    kode: kodeBarang,
+                    nama: namaBarang,
+                    merk: 'Mutasi Masuk',
+                    tahun: tahun,
+                    baik: kondisi === 'B' ? jumlah : 0,
+                    rusakRingan: kondisi === 'RR' ? jumlah : 0,
+                    rusakBerat: kondisi === 'RB' ? jumlah : 0,
+                    fotoBarang: 'https://placehold.co/300x300/e2e8f0/475569?text=Barang+Mutasi',
+                    asnNama: ruangAktif.pjNama,
+                    asnNip: ruangAktif.pjNip,
+                    asnFoto: ruangAktif.pjFoto
+                });
+
+                // Catat riwayat mutasi masuk
+                state.mutasi.unshift({
+                    id: 'MUT-IN-' + Date.now(),
+                    ruanganId: state.activeRuanganId,
+                    jenis: 'MASUK',
+                    tanggal: getFormattedNow(),
+                    kodeBarang: kodeBarang,
+                    namaBarang: namaBarang,
+                    jumlah: jumlah,
+                    kondisi: kondisi,
+                    asalTujuan: asal,
+                    keterangan: keterangan,
+                    petugas: ruangAktif.pjNama
+                });
+
+                showToast(`Mutasi masuk ${jumlah} unit ${namaBarang} berhasil!`, 'success');
+            }
+
+            closeModal('modalMutasi');
+            renderCurrentView();
+        }
+
+        // ==========================================
+        // TAMBAH RUANGAN BARU
+        // ==========================================
+        function simpanRuangan(e) {
+            e.preventDefault();
+            const newId = 'R-' + Date.now();
+            const newRuang = {
+                id: newId,
+                kode: document.getElementById('inputKodeRuang').value,
+                nama: document.getElementById('inputNamaRuang').value,
+                lokasi: 'Gedung Kantor Instansi',
+                pjNama: document.getElementById('inputPjNama').value,
+                pjNip: document.getElementById('inputPjNip').value,
+                pjJabatan: 'Penanggung Jawab Ruangan',
+                pjFoto: 'https://placehold.co/150x150/3b82f6/ffffff?text=ASN'
+            };
+
+            state.ruangan.push(newRuang);
+            state.activeRuanganId = newId;
+            closeModal('modalRuangan');
+            initApp();
+            showToast(`Ruangan "${newRuang.nama}" berhasil ditambahkan!`, 'success');
+        }
+
+        // ==========================================
+        // UTILITIES (MODAL, PREVIEW FOTO, TOAST)
+        // ==========================================
+        function openModal(id, isEdit = false) {
+            if (id === 'modalBarang' && !isEdit) {
+                document.getElementById('modalBarangTitle').textContent = 'Tambah Barang Inventaris';
+                document.getElementById('formBarang').reset();
+                document.getElementById('editBarangId').value = '';
+                document.getElementById('previewBarangImg').src = 'https://placehold.co/100x100/e2e8f0/64748b?text=Foto+Barang';
+                document.getElementById('previewAsnImg').src = 'https://placehold.co/80x80/cbd5e1/475569?text=ASN';
+            }
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function previewFoto(src, caption) {
+            document.getElementById('imgPreviewBesar').src = src;
+            document.getElementById('captionPreviewBesar').textContent = caption;
+            openModal('modalPreviewFoto');
+        }
+
+        function previewImageUpload(input, imgId, hiddenUrlId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById(imgId).src = e.target.result;
+                    if (hiddenUrlId) document.getElementById(hiddenUrlId).value = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function getFormattedNow() {
+            const now = new Date();
+            return now.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' +
+                   now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-800 text-white';
+            let icon = 'fa-circle-info text-blue-400';
+            if (type === 'success') { bgClass = 'bg-emerald-900 text-white border border-emerald-700'; icon = 'fa-circle-check text-emerald-400'; }
+            if (type === 'error') { bgClass = 'bg-rose-900 text-white border border-rose-700'; icon = 'fa-circle-exclamation text-rose-400'; }
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium transform transition-all duration-300 translate-y-2 opacity-0`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Jalankan aplikasi saat halaman siap
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
